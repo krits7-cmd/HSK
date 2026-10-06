@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSK 2 Flashcards</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Prompt', sans-serif;
+        }
+        body {
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 480px;
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        }
+        h2, h3 {
+            text-align: center;
+            color: #333;
+            margin-top: 0;
+        }
+        /* แฟลชการ์ด */
+        .card {
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-align: center;
+            margin: 20px 0;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+        }
+        .chinese {
+            font-size: 3rem;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        .pinyin {
+            font-size: 1.2rem;
+            color: #e74c3c;
+            margin-top: 5px;
+        }
+        .meaning {
+            font-size: 1.1rem;
+            color: #27ae60;
+            margin-top: 10px;
+        }
+        .example {
+            font-size: 0.95rem;
+            color: #7f8c8d;
+            margin-top: 10px;
+        }
+        /* ปุ่มจัดการ */
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-next { background: #3498db; color: white; }
+        .btn-delete { background: #e74c3c; color: white; flex: 0.4; }
+        .btn-next:hover { background: #2980b9; }
+        .btn-delete:hover { background: #c0392b; }
+
+        /* ฟอร์มเพิ่มคำศัพท์ */
+        .add-form {
+            border-top: 2px dashed #eee;
+            padding-top: 20px;
+            margin-top: 20px;
+        }
+        .input-group {
+            margin-bottom: 12px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+        .btn-add {
+            background: #2ecc71;
+            color: white;
+            width: 100%;
+        }
+        .btn-add:hover { background: #27ae60; }
+        .word-count {
+            text-align: right;
+            font-size: 0.85rem;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>HSK 2 Flashcards</h2>
+    <div class="word-count" id="word-count">จำนวนคำศัพท์: 0</div>
+
+    <!-- ส่วนแสดงคำศัพท์ -->
+    <div class="card" id="card">
+        <div class="chinese" id="chinese">...</div>
+        <div class="pinyin" id="pinyin"></div>
+        <div class="meaning" id="meaning"></div>
+        <div class="example" id="example"></div>
+    </div>
+
+    <div class="btn-group">
+        <button class="btn-next" onclick="nextWord()">สุ่มคำถัดไป ➔</button>
+        <button class="btn-delete" onclick="deleteWord()" title="ลบคำนี้ออกจากระบบ">🗑️ ลบ</button>
+    </div>
+
+    <!-- ฟอร์มเพิ่มคำศัพท์ใหม่ -->
+    <div class="add-form">
+        <h3>➕ เพิ่มคำศัพท์ใหม่</h3>
+        <div class="input-group">
+            <input type="text" id="new-word" placeholder="คำศัพท์จีน (เช่น 苹果)">
+        </div>
+        <div class="input-group">
+            <input type="text" id="new-pinyin" placeholder="พินอิน (เช่น píngguǒ)">
+        </div>
+        <div class="input-group">
+            <input type="text" id="new-meaning" placeholder="คำแปลภาษาไทย (เช่น แอปเปิล)">
+        </div>
+        <div class="input-group">
+            <input type="text" id="new-example" placeholder="ประโยคตัวอย่าง (ถ้ามี)">
+        </div>
+        <button class="btn-add" onclick="addWord()">เพิ่มคำศัพท์</button>
+    </div>
+</div>
+
+<script>
+    // คำศัพท์เริ่มต้น
+    const defaultWords = [
+        { word: "报纸", pinyin: "bàozhǐ", meaning: "หนังสือพิมพ์", example: "哥哥在看报纸。" },
+        { word: "唱歌", pinyin: "chànggē", meaning: "ร้องเพลง", example: "她唱歌唱得很好听。" },
+        { word: "电脑", pinyin: "diànnǎo", meaning: "คอมพิวเตอร์", example: "我新买了一台电脑。" }
+    ];
+
+    // โหลดคำศัพท์จาก LocalStorage (ถ้าไม่มีให้ใช้คำศัพท์เริ่มต้น)
+    let words = JSON.parse(localStorage.getItem('hsk2_words')) || defaultWords;
+    let currentIndex = 0;
+
+    // แสดงคำศัพท์บนหน้าจอ
+    function displayWord(index) {
+        if (words.length === 0) {
+            document.getElementById('chinese').innerText = "ไม่มีคำศัพท์";
+            document.getElementById('pinyin').innerText = "";
+            document.getElementById('meaning').innerText = "กรุณาเพิ่มคำศัพท์ใหม่ด้านล่าง";
+            document.getElementById('example').innerText = "";
+            document.getElementById('word-count').innerText = "จำนวนคำศัพท์: 0";
+            return;
+        }
+
+        const current = words[index];
+        document.getElementById('chinese').innerText = current.word;
+        document.getElementById('pinyin').innerText = current.pinyin;
+        document.getElementById('meaning').innerText = current.meaning;
+        document.getElementById('example').innerText = current.example ? `ตัวอย่าง: ${current.example}` : "";
+        document.getElementById('word-count').innerText = `จำนวนคำศัพท์: ${words.length}`;
+    }
+
+    // บันทึกลง LocalStorage
+    function saveToStorage() {
+        localStorage.setItem('hsk2_words', JSON.stringify(words));
+    }
+
+    // สุ่มคำถัดไป
+    function nextWord() {
+        if (words.length <= 1) return;
+        let newIndex;
+        do {
+            newIndex = Math.floor(Math.random() * words.length);
+        } while (newIndex === currentIndex);
+        
+        currentIndex = newIndex;
+        displayWord(currentIndex);
+    }
+
+    // ฟังก์ชันเพิ่มคำศัพท์
+    function addWord() {
+        const wordInput = document.getElementById('new-word').value.trim();
+        const pinyinInput = document.getElementById('new-pinyin').value.trim();
+        const meaningInput = document.getElementById('new-meaning').value.trim();
+        const exampleInput = document.getElementById('new-example').value.trim();
+
+        if (!wordInput || !meaningInput) {
+            alert("กรุณากรอกคำศัพท์จีนและคำแปลก่อนครับ");
+            return;
+        }
+
+        const newObj = {
+            word: wordInput,
+            pinyin: pinyinInput,
+            meaning: meaningInput,
+            example: exampleInput
+        };
+
+        words.push(newObj);
+        saveToStorage();
+
+        // เคลียร์ช่องพิมพ์
+        document.getElementById('new-word').value = '';
+        document.getElementById('new-pinyin').value = '';
+        document.getElementById('new-meaning').value = '';
+        document.getElementById('new-example').value = '';
+
+        // แสดงคำศัพท์ใหม่ทันที
+        currentIndex = words.length - 1;
+        displayWord(currentIndex);
+        alert('เพิ่มคำศัพท์สำเร็จ!');
+    }
+
+    // ฟังก์ชันลบคำศัพท์
+    function deleteWord() {
+        if (words.length === 0) return;
+
+        const confirmDelete = confirm(`คุณต้องการลบคำว่า "${words[currentIndex].word}" ใช่หรือไม่?`);
+        if (confirmDelete) {
+            words.splice(currentIndex, 1);
+            saveToStorage();
+
+            if (currentIndex >= words.length) {
+                currentIndex = 0;
+            }
+            displayWord(currentIndex);
+        }
+    }
+
+    // เริ่มต้นแสดงผลคำศัพท์แรกเมื่อเปิดหน้าเว็บ
+    displayWord(currentIndex);
+</script>
+
+</body>
+</html>
